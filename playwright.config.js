@@ -22,6 +22,9 @@ export default defineConfig({
 
   reporter: [
     ['list'],
+    /* No CI: anotações nos testes que falharem + JUnit para o resumo gráfico do GitHub */
+    ...(process.env.CI ? [['github']] : []),
+    ['junit', { outputFile: 'reports/junit.xml' }],
     ['html', { open: 'never' }],
     ['allure-playwright', {
       resultsDir: 'allure-results',

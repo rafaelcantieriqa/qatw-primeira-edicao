@@ -13,6 +13,8 @@ concurrency:
 
 permissions:
   contents: read
+  checks: write        # necessário para o relatório gráfico de testes (aba Checks)
+  pull-requests: write
 
 jobs:
   e2e:
@@ -80,6 +82,27 @@ jobs:
         with:
           path: allure-history
           key: allure-history-${{ github.ref_name }}-${{ github.run_id }}
+
+      - name: Relatório gráfico dos testes (Summary + Checks)
+        if: ${{ !cancelled() }}
+        uses: dorny/test-reporter@v2
+        with:
+          name: Resultados dos testes E2E
+          path: reports/junit.xml
+          reporter: java-junit
+          fail-on-error: false
+
+      - name: Resumo da execução
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo "## 📊 Relatórios desta execução"
+            echo ""
+            echo "- **Allure Report** e **Playwright Report**: baixe em *Artifacts* no fim desta página"
+            if [ "${{ vars.ALLURE_PAGES }}" = "true" ]; then
+              echo "- **Allure online**: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Logs dos containers (em caso de falha)
         if: failure()
