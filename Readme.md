@@ -40,24 +40,48 @@ O projeto utiliza Docker Compose para gerenciar os serviços necessários para o
    docker-compose down
    ```
 
+## 🔐 Variáveis de ambiente
+Copie o arquivo `.env.example` para `.env` e preencha os dados do Mailtrap (o `.env` não vai para o Git):
+```sh
+cp .env.example .env
+```
+
 ## 🧪 Executando os Testes com Playwright
 
-1. Instale as dependências do Playwright:
+1. Instale as dependências:
    ```sh
-   npx playwright install
+   npm ci
+   npx playwright install chromium
    ```
-2. Para rodar os testes localmente:
+2. Rodar os testes:
    ```sh
-   npx playwright test
+   npm test
    ```
-3. Para visualizar o relatório dos testes após a execução:
+3. Relatório HTML do Playwright:
    ```sh
    npx playwright show-report
    ```
-4. Para rodar os testes em modo UI (visualizando a execução):
+4. Modo UI:
    ```sh
-   npx playwright test --ui
+   npm run test:ui
    ```
+
+## 📊 Allure Report
+Usa o **Allure 3** (CLI em Node.js — não precisa de Java).
+
+```sh
+npm run test:allure     # limpa resultados, roda os testes e gera ./allure-report
+npm run allure:open     # abre o relatório no navegador
+```
+
+## ⚙️ CI/CD (GitHub Actions)
+O workflow fica em `.github/workflows/e2e-tests.yml` e roda a cada push, em PRs para a `main` e manualmente (aba **Actions → E2E Tests → Run workflow**).
+
+Ele sobe o ambiente com Docker Compose, roda os testes e publica os relatórios Allure e Playwright como *artifacts* da execução.
+
+Opcional:
+- **Secrets** (Settings → Secrets and variables → Actions → Secrets): `MAILTRAP_ACCOUNT_ID`, `MAILTRAP_TOKEN`, `MAILTRAP_INBOX_ID`.
+- **Allure no GitHub Pages**: em Settings → Pages, escolha *Source: GitHub Actions*; depois crie a variável `ALLURE_PAGES` = `true` (Settings → Secrets and variables → Actions → Variables).
 
 ## 📄 Licença
 Este projeto está sob a licença MIT.

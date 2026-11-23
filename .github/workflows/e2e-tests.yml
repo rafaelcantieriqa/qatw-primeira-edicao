@@ -1,0 +1,127 @@
+name: E2E Tests (Playwright + Allure)
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # permite rodar manualmente pela aba "Actions"
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      BASE_URL: http://paybank-mf-auth:3000
+      DATABASE_URL: postgresql://dba:dba@paybank-db:5432/UserDB
+      # Secrets opcionais (Settings > Secrets and variables > Actions)
+      MAILTRAP_ACCOUNT_ID: ${{ secrets.MAILTRAP_ACCOUNT_ID }}
+      MAILTRAP_TOKEN: ${{ secrets.MAILTRAP_TOKEN }}
+      MAILTRAP_INBOX_ID: ${{ secrets.MAILTRAP_INBOX_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar hosts dos containers
+        run: |
+          echo "127.0.0.1 paybank-mf-auth paybank-ms-auth paybank-ms-email paybank-db paybank-redis" | sudo tee -a /etc/hosts
+
+      - name: Subir ambiente (docker compose)
+        run: docker compose up -d paybank-mf-auth paybank-ms-auth paybank-ms-email
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Instalar navegador do Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Aguardar serviços ficarem prontos
+        run: |
+          for i in $(seq 1 60); do
+            if docker logs paybank-ms-auth 2>&1 | grep -q "Server running" \
+               && curl -sf -o /dev/null http://paybank-mf-auth:3000; then
+              echo "Ambiente pronto!"; exit 0
+            fi
+            echo "Aguardando serviços... ($i/60)"; sleep 5
+          done
+          echo "Timeout aguardando os serviços"; docker compose ps; docker compose logs; exit 1
+
+      - name: Restaurar histórico do Allure
+        uses: actions/cache/restore@v4
+        with:
+          path: allure-history
+          key: allure-history-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            allure-history-${{ github.ref_name }}-
+            allure-history-main-
+
+      - name: Rodar testes
+        run: npx allure run -- npx playwright test
+
+      - name: Salvar histórico do Allure
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: allure-history
+          key: allure-history-${{ github.ref_name }}-${{ github.run_id }}
+
+      - name: Logs dos containers (em caso de falha)
+        if: failure()
+        run: docker compose logs --tail=200
+
+      - name: Publicar relatório Allure (artifact)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: allure-report/
+          retention-days: 14
+
+      - name: Publicar relatório Playwright (artifact)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+      - name: Preparar relatório para o GitHub Pages
+        if: ${{ !cancelled() && github.ref == 'refs/heads/main' && vars.ALLURE_PAGES == 'true' }}
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: allure-report/
+
+  deploy-report:
+    name: Publicar Allure no GitHub Pages
+    needs: e2e
+    # Só roda na main e se a variável ALLURE_PAGES=true estiver configurada no repositório
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && vars.ALLURE_PAGES == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,29 @@
+{
+  "name": "qatw-primeira-edicao",
+  "version": "1.0.0",
+  "repository": "git@github.com:rafaelcantieriqa/qatw-primeira-edicao.git",
+  "author": "Rafael Cantieri <rafaelcbonfatti@outlook.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.6",
+    "allure": "^3.33.0",
+    "allure-js-commons": "^3.15.0",
+    "allure-playwright": "^3.15.0",
+    "dotenv": "^18.0.10"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "allure:clean": "node -e \"for (const d of ['allure-results','allure-report']) require('fs').rmSync(d,{recursive:true,force:true})\"",
+    "allure:generate": "allure generate ./allure-results",
+    "allure:open": "allure open ./allure-report",
+    "test:allure": "npm run allure:clean && allure run -- playwright test",
+    "env:up": "docker compose up -d",
+    "env:down": "docker compose down"
+  },
+  "dependencies": {
+    "pg-promise": "^12.7.1"
+  }
+}

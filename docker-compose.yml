@@ -4,7 +4,7 @@ services:
   # Serviço de banco de dados PostgreSQL
   db:
     container_name: paybank-db
-    image: postgres:13
+    image: postgres:15
     environment:
       - POSTGRES_USER=dba                 # Usuário do banco de dados
       - POSTGRES_PASSWORD=dba             # Senha do banco de dados
@@ -14,6 +14,11 @@ services:
     ports:
       - "5432:5432"                       # Mapeamento da porta do banco de dados
     restart: always                       # Reinicia o serviço automaticamente se falhar
+    healthcheck:                          # Indica quando o banco está pronto para conexões
+      test: ["CMD-SHELL", "pg_isready -U dba -d UserDB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     networks:
       - skynet                             # Conecta à rede 'skynet'
 
@@ -67,7 +72,12 @@ services:
     networks:
       - skynet
     depends_on:
-      - db                        # Depende do serviço 'db'
+      db:                         # Depende do serviço 'db' (aguarda o healthcheck)
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./paybank-auth-seed.js:/app/prisma/seed.js:ro
     environment:
       - DATABASE_URL=postgresql://dba:dba@paybank-db:5432/UserDB    # URL de conexão com o banco de dados
       - REDIS_HOST=paybank-redis                             # Host do Redis
@@ -89,9 +99,9 @@ services:
     environment:
       - REDIS_HOST=paybank-redis                             # Host do Redis
       - REDIS_PORT=6379                                      # Porta do Redis
-      - MAILTRAP_ACCOUNT_ID=3365587                          # ID da conta do Mailtrap
-      - MAILTRAP_TOKEN=8aa3830ddaeaadd601afe16cae5da073      # Token do Mailtrap
-      - MAILTRAP_INBOX_ID=3365587                            # ID da caixa de entrada do Mailtrap
+      - MAILTRAP_ACCOUNT_ID=${MAILTRAP_ACCOUNT_ID:-} # ID da conta do Mailtrap
+      - MAILTRAP_TOKEN=${MAILTRAP_TOKEN:-} # Token do Mailtrap
+      - MAILTRAP_INBOX_ID=${MAILTRAP_INBOX_ID:-} # ID da caixa de entrada do Mailtrap
       - TZ=America/Sao_Paulo                                 # Fuso horário
     restart: unless-stopped
 
@@ -114,3 +124,4 @@ services:
 networks:
   skynet:
     driver: bridge               # Configuração da rede bridge
+
