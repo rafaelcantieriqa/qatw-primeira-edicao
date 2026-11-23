@@ -87,3 +87,4 @@ Opcional:
 
 ## 📄 Licença
 Este projeto está sob a licença MIT.
+> ✅ Cada push recebe feedback automático da qualidade, sem precisar rodar nada na máquina local.
