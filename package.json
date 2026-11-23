@@ -13,8 +13,10 @@
     "dotenv": "^18.0.10"
   },
   "scripts": {
-    "test": "playwright test",
+    "test": "node scripts/test-with-report.mjs",
+    "test:only": "playwright test",
     "test:headed": "playwright test --headed",
+    "test:headed:report": "node scripts/test-with-report.mjs --headed",
     "test:ui": "playwright test --ui",
     "allure:clean": "node -e \"for (const d of ['allure-results','allure-report']) require('fs').rmSync(d,{recursive:true,force:true})\"",
     "allure:generate": "allure generate ./allure-results",

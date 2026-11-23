@@ -1,4 +1,6 @@
 # QA Tech Week - Primeira Edição
+![E2E Tests](https://github.com/rafaelcantieriqa/qatw-primeira-edicao/actions/workflows/e2e-tests.yml/badge.svg)
+
 
 Bem-vindo ao repositório do **QA Tech Week - Primeira Edição**! Aqui você encontrará as instruções para configurar o ambiente, subir os serviços necessários e rodar os testes automatizados com Playwright.
 

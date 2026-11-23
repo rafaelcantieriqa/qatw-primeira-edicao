@@ -39,6 +39,9 @@ export class LoginPage {
             for (const digito of String(password)) {
                 await this.page.getByRole('button', { name: digito, exact: true }).click();
             }
+
+            // Só valida depois de digitar todos os dígitos: antes disso o
+            // botão fica desabilitado de propósito (senha incompleta).
             await expect(this.continueButton).toBeEnabled();
             await this.continueButton.click();
             await expect(this.twoFactorHeading).toBeVisible();
@@ -58,9 +61,7 @@ export class LoginPage {
         });
     }
 
-    /**
-     * Fluxo completo até a tela do 2FA.
-     */
+
     async loginUntil2FA(usuario) {
         await this.accessPage();
         await this.fillCpf(usuario.cpf);

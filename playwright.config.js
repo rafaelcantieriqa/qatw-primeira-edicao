@@ -2,6 +2,10 @@
 import 'dotenv/config';
 import os from 'node:os';
 import { defineConfig, devices } from '@playwright/test';
+import { startAllureWatchInUiMode } from './scripts/allure-ui-watch.mjs';
+
+/* No modo UI (npx playwright test --ui) abre o Allure atualizando em tempo real */
+startAllureWatchInUiMode();
 
 const BASE_URL = process.env.BASE_URL || 'http://paybank-mf-auth:3000';
 
